@@ -1,7 +1,8 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
     content: [
-        "./public/**/*.html",
+        "./index.html",
+        "./src/**/*.{vue,js,ts,jsx,tsx}",
     ],
     theme: {
         extend: {
@@ -17,10 +18,4 @@ module.exports = {
         }
     },
     plugins: [],
-    corePlugins: {
-        preflight: true, // 确保包含基础样式
-    },
-    future: {
-        hoverOnlyWhenSupported: true, // 仅在支持hover的设备上应用hover效果
-    }
 }
