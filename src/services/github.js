@@ -14,6 +14,7 @@ export async function createPullRequest(token, { fileName, fileContent, commitMe
 
   try {
     const { data: user } = await octokit.rest.users.getAuthenticated()
+    console.log('[GitHub] Authenticated as:', user.login)
     
     const { data: refData } = await octokit.rest.git.getRef({
       owner: repoConfig.owner,
@@ -21,7 +22,9 @@ export async function createPullRequest(token, { fileName, fileContent, commitMe
       ref: `heads/${repoConfig.baseBranch}`,
     })
     const baseSha = refData.object.sha
+    console.log('[GitHub] Base SHA:', baseSha)
 
+    console.log('[GitHub] Creating branch:', branchName)
     await octokit.rest.git.createRef({
       owner: repoConfig.owner,
       repo: repoConfig.repo,
@@ -29,6 +32,7 @@ export async function createPullRequest(token, { fileName, fileContent, commitMe
       sha: baseSha,
     })
 
+    console.log('[GitHub] Uploading file:', filePath)
     await octokit.rest.repos.createOrUpdateFileContents({
       owner: repoConfig.owner,
       repo: repoConfig.repo,
@@ -38,6 +42,7 @@ export async function createPullRequest(token, { fileName, fileContent, commitMe
       branch: branchName,
     })
 
+    console.log('[GitHub] Creating PR')
     const { data: pr } = await octokit.rest.pulls.create({
       owner: repoConfig.owner,
       repo: repoConfig.repo,
@@ -54,7 +59,13 @@ export async function createPullRequest(token, { fileName, fileContent, commitMe
       branchName
     }
   } catch (error) {
-    console.error('Failed to create pull request:', error)
+    console.error('[GitHub] Error:', error.status, error.message)
+    if (error.status === 404) {
+      return {
+        success: false,
+        error: 'API 权限不足。请确保 Token 有 repo 完整权限。'
+      }
+    }
     return {
       success: false,
       error: error.message

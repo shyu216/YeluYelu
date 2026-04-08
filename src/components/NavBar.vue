@@ -1,17 +1,10 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import LoginButton from './LoginButton.vue'
 import UploadModal from './UploadModal.vue'
 
 const router = useRouter()
-const auth = useAuthStore()
 const showUploadModal = ref(false)
-
-onMounted(() => {
-  auth.initAuth()
-})
 
 const goHome = () => {
   router.push('/')
@@ -26,7 +19,6 @@ const goHome = () => {
         <h1 class="text-lg md:text-2xl lg:text-3xl font-bold text-primary">常见鸟类辨识图鉴</h1>
       </div>
       <div class="flex items-center space-x-4">
-        <LoginButton />
         <button 
           id="add-bird-btn" 
           class="btn-primary flex items-center"

@@ -5,3 +5,5 @@ dist/
 # 运行时生成的IP记录
 ip_operations.json
 operation_log.json
+
+.env
