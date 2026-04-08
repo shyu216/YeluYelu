@@ -57,16 +57,17 @@ jobs:
       - name: Get issue body for attachments
         id: attachments
         run: |
-          BODY='${{ github.event.issue.body }}'
+          BODY="${{ github.event.issue.body }}"
           
           echo "$BODY" > body.txt
           
-          URLS=$(grep -oE 'https://github\.com/user-attachments/assets/[a-zA-Z0-9-]+' body.txt || echo "")
+          URLS=$(grep -oE 'https://github\.com/user-attachments/assets/[a-zA-Z0-9-]+' body.txt || true)
           
           if [ -z "$URLS" ]; then
+            echo "No attachments found in issue body"
             echo "count=0" >> $GITHUB_OUTPUT
           else
-            echo "$URLS" | tr '\n' ' ' > urls.txt
+            echo "$URLS" > urls.txt
             echo "count=$(cat urls.txt | wc -l)" >> $GITHUB_OUTPUT
           fi
 
