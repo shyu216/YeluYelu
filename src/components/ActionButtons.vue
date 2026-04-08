@@ -125,21 +125,13 @@ function openGitHubIssue() {
   const REPO_OWNER = 'shyu216'
   const REPO_NAME = 'YeluYelu'
   
-  const issueTitle = `夜师傅的第 ${nextIssueNumber.value} 张丑照`
-  const issueBody = `## 夜鹭拟态图鉴上传
+  const issueTitle = `夜师傅的第 ${nextIssueNumber.value} 张丑照 - ${new Date().toLocaleString('zh-CN')}`
+  const issueBody = `拟态名称：[[[请在这里填写拟态]]]
 
-### 拟态名称
+系统会自动识别三个英语半角括号括起来的形状作为拟态名称。
 
-### 摄影师/来源
-
-### 上传时间
-${new Date().toLocaleString('zh-CN')}
-
-### 图片说明
-请将图片文件上传到此 Issue 的评论中（点击评论框下方的 📎 附件图标）。
-
----
-💡 提示：管理员会定期处理未处理的 Issue。`
+点击评论框下方的 📎 附件图标上传图片，当出现 ![Image](.....png) 这段代码时，就说明上传成功啦。放在这个表格任意地方即可，系统会自动识别这个形状，获取图片。
+`
 
   const labels = ['needs-review']
   const issueUrl = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/new?title=${encodeURIComponent(issueTitle)}&body=${encodeURIComponent(issueBody)}&labels=${encodeURIComponent(labels.join(','))}`

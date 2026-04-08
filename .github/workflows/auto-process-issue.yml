@@ -25,10 +25,11 @@ jobs:
           
           NAME=""
           
-          if [[ "$BODY" =~ 拟态名称[\s\n]*\*\*请填写拟态名称\*\*[^\n]*\n?([^\n]+) ]]; then
+          if [[ "$BODY" =~ \[\[\[([^\]]+)\]\]\] ]]; then
             NAME="${BASH_REMATCH[1]}"
-          elif [[ "$BODY" =~ 拟态名称[\s\n]*([^\n]+) ]]; then
+          elif [[ "$BODY" =~ !\[([^\]]+)\]\(https://github\.com/user-attachments/assets/[a-zA-Z0-9-]+\) ]]; then
             NAME="${BASH_REMATCH[1]}"
+            NAME="${NAME%.*}"
           fi
           
           if [[ "$NAME" == *"请填写"* ]] || [[ -z "$NAME" ]]; then
@@ -46,10 +47,12 @@ jobs:
           
           NAME="${NAME#"${NAME%%[![:space:]]*}"}"
           NAME="${NAME%"${NAME##*[![:space:]]}"}"
+          NAME="${NAME//$'\n'/}"
+          NAME="${NAME//$'\r'/}"
           NAME="${NAME// /-}"
           
           echo "name=$NAME" >> $GITHUB_OUTPUT
-          echo "Extracted name: $NAME"
+          echo "Extracted name: [[[$NAME]]]"
 
       - name: Get issue body for attachments
         id: attachments
