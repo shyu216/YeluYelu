@@ -58,8 +58,6 @@ export const useAuthStore = defineStore('auth', () => {
   function login() {
     const scope = 'repo'
     const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scope}`
-    console.log('OAuth URL:', authUrl)
-    alert('登录URL: ' + authUrl + '\n\n如果看到这个alert，请告诉我内容')
     window.location.href = authUrl
   }
 

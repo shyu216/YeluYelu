@@ -14,6 +14,8 @@ const uploadProgress = ref('')
 const selectedFile = ref(null)
 const previewUrl = ref(null)
 const birdName = ref('')
+const photographer = ref('')
+const mimicry = ref('')
 const error = ref('')
 
 const REPO_OWNER = 'shyu216'
@@ -26,6 +28,8 @@ function handleFileSelect(event) {
     selectedFile.value = file
     previewUrl.value = URL.createObjectURL(file)
     birdName.value = file.name.replace(/\.[^/.]+$/, '')
+    mimicry.value = file.name.replace(/\.[^/.]+$/, '')
+    photographer.value = auth.user?.login || ''
   }
 }
 
@@ -36,6 +40,8 @@ function handleDrop(event) {
     selectedFile.value = file
     previewUrl.value = URL.createObjectURL(file)
     birdName.value = file.name.replace(/\.[^/.]+$/, '')
+    mimicry.value = file.name.replace(/\.[^/.]+$/, '')
+    photographer.value = auth.user?.login || ''
   }
 }
 
@@ -50,6 +56,8 @@ function removeImage() {
   selectedFile.value = null
   previewUrl.value = null
   birdName.value = ''
+  photographer.value = ''
+  mimicry.value = ''
 }
 
 async function handleUpload() {
@@ -62,6 +70,10 @@ async function handleUpload() {
     error.value = '请先登录 GitHub'
     return
   }
+
+  const finalName = mimicry.value.trim() || birdName.value.trim()
+  const finalPhotographer = photographer.value.trim() || auth.user?.login || 'anonymous'
+  const fileName = `${finalName}_by_${finalPhotographer}.jpg`
 
   isUploading.value = true
   error.value = ''
@@ -77,7 +89,6 @@ async function handleUpload() {
     })
 
     uploadProgress.value = '正在转换为 Base64...'
-    const fileName = generateFileName(birdName.value + '.jpg', 'jpg')
     const base64Content = await fileToBase64(processedBlob)
 
     uploadProgress.value = '正在保存到本地...'
@@ -85,8 +96,10 @@ async function handleUpload() {
     uploadStore.addPendingUpload({
       fileName,
       fileContent: base64Content,
-      commitMessage: `feat: 上传 ${birdName.value}`,
-      birdName: birdName.value,
+      commitMessage: `feat: 上传 ${finalName} by ${finalPhotographer}`,
+      birdName: finalName,
+      photographer: finalPhotographer,
+      mimicry: finalName,
       previewUrl: previewUrl.value,
       createdAt: new Date().toISOString()
     })
@@ -96,7 +109,7 @@ async function handleUpload() {
     createPullRequest(auth.token, {
       fileName,
       fileContent: base64Content,
-      commitMessage: `feat: 上传 ${birdName.value}`
+      commitMessage: `feat: 上传 ${finalName} by ${finalPhotographer}`
     }).then(result => {
       if (result.success) {
         uploadStore.updateUploadStatus(uploadId, 'success')
@@ -109,7 +122,7 @@ async function handleUpload() {
 
     uploadProgress.value = ''
     alert('已经上传服务器，等待审批')
-    emit('uploaded', { fileName, birdName: birdName.value })
+    emit('uploaded', { fileName, birdName: finalName, photographer: finalPhotographer })
     emit('close')
   } catch (err) {
     error.value = err.message || '上传失败，请重试'
@@ -141,17 +154,6 @@ async function handleUpload() {
 
         <div v-else>
           <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-1">名称（10个字以内）</label>
-            <input 
-              v-model="birdName"
-              type="text" 
-              placeholder="输入鸟类名称"
-              maxlength="10"
-              class="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50"
-            >
-          </div>
-
-          <div class="mb-6">
             <label class="block text-sm font-medium text-gray-700 mb-1">图片</label>
             <div 
               v-if="!previewUrl"
@@ -184,6 +186,32 @@ async function handleUpload() {
             </div>
           </div>
 
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">拟态（图片名称）</label>
+            <input 
+              v-model="mimicry"
+              type="text" 
+              placeholder="图片描述"
+              class="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">摄影师</label>
+            <input 
+              v-model="photographer"
+              type="text" 
+              placeholder="拍摄者"
+              class="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+          </div>
+
+          <div v-if="mimicry && photographer" class="mb-4 p-3 bg-gray-100 rounded">
+            <p class="text-sm text-gray-600">
+              文件名将保存为：<span class="font-mono font-bold">{{ mimicry }}_by_{{ photographer }}.jpg</span>
+            </p>
+          </div>
+
           <div v-if="error" class="mb-4 p-3 bg-red-50 text-red-600 rounded">
             {{ error }}
           </div>
@@ -197,7 +225,7 @@ async function handleUpload() {
             <button 
               @click="handleUpload" 
               class="btn-primary"
-              :disabled="isUploading || !selectedFile || !birdName.trim()"
+              :disabled="isUploading || !selectedFile"
             >
               <span v-if="isUploading">
                 <i class="fa fa-spinner fa-spin mr-2"></i>上传中...
