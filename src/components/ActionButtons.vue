@@ -112,8 +112,7 @@ async function getNextIssueNumber() {
     const response = await fetch(apiUrl)
     if (response.ok) {
       const issues = await response.json()
-      const openIssues = issues.filter(issue => issue.state === 'merged')
-      nextIssueNumber.value = openIssues.length + 1
+      nextIssueNumber.value = issues.length + 1
     }
   } catch (error) {
     console.error('获取 Issue 数量失败:', error)

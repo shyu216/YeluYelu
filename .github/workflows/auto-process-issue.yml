@@ -103,13 +103,13 @@ jobs:
           NAME="${{ steps.extract.outputs.name }}"
           IMAGE_NAME="$NAME.jpg"
           
-          NEW_ID=$(($(jq 'length' data.json) + 1))
+          NEW_ID=$(($(jq 'length' public/data.json) + 1))
           
           jq --arg id "$NEW_ID" --arg name "$NAME" --arg url "$IMAGE_NAME" \
             '. += [{"id": ($id | tonumber), "name": $name, "imageUrl": $url}]' \
-            data.json > data.json.tmp
+            public/data.json > public/data.json.tmp
           
-          mv data.json.tmp public/data.json
+          mv public/data.json.tmp public/data.json
           
           echo "Updated data.json with: $NAME"
 
@@ -121,7 +121,7 @@ jobs:
           git checkout -b "$BRANCH_NAME"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/images/ data.json
+          git add public/images/ public/data.json
           git commit -m "feat: 添加 ${{ steps.extract.outputs.name }} 图片"
           git push -u origin "$BRANCH_NAME"
           
