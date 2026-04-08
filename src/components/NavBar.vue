@@ -1,12 +1,8 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import UploadModal from './UploadModal.vue'
-import UploadIssueModal from './UploadIssueModal.vue'
 
 const router = useRouter()
-const showUploadModal = ref(false)
-const showUploadIssueModal = ref(false)
 
 const goHome = () => {
   router.push('/')
@@ -18,36 +14,8 @@ const goHome = () => {
     <div class="container mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center space-x-2 cursor-pointer" @click="goHome">
         <i class="fa fa-dove text-primary text-5xl"></i>
-        <h1 class="text-lg md:text-2xl lg:text-3xl font-bold text-primary">常见鸟类辨识图鉴</h1>
-      </div>
-      <div class="flex items-center space-x-4">
-        <button 
-          id="add-bird-btn" 
-          class="btn-primary flex items-center"
-          @click="showUploadModal = true"
-        >
-          <i class="fa fa-plus mr-2"></i>上传更多夜师傅丑照
-        </button>
-        <button 
-          id="add-bird-issue-btn" 
-          class="btn-secondary flex items-center"
-          @click="showUploadIssueModal = true"
-        >
-          <i class="fa fa-rocket mr-2"></i>快速提交
-        </button>
+        <h1 class="text-lg md:text-2xl lg:text-3xl font-bold text-primary">常见生物辨识图鉴</h1>
       </div>
     </div>
   </header>
-
-  <UploadModal 
-    v-if="showUploadModal" 
-    @close="showUploadModal = false"
-    @uploaded="showUploadModal = false"
-  />
-  
-  <UploadIssueModal 
-    v-if="showUploadIssueModal" 
-    @close="showUploadIssueModal = false"
-    @uploaded="showUploadIssueModal = false"
-  />
 </template>

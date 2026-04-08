@@ -10,7 +10,7 @@ import NavBar from './components/NavBar.vue'
       <RouterView />
     </main>
     <footer class="bg-white border-t-2 border-black p-4 text-center">
-      <p class="text-gray-600">© 2026 夜鹭页录</p>
+      <p class="text-gray-600">© 2026 夜鹭页录 GitHub客户端</p>
     </footer>
   </div>
 </template>
