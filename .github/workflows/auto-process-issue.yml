@@ -33,21 +33,20 @@ jobs:
           echo "name=$NAME" >> $GITHUB_OUTPUT
           echo "Extracted name: $NAME"
 
-      - name: Get issue attachments
+      - name: Get issue body for attachments
         id: attachments
         run: |
-          ISSUE_NUMBER=${{ github.event.issue.number }}
-          REPO="${{ github.repository }}"
+          BODY="${{ github.event.issue.body }}"
           
-          curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/$REPO/issues/$ISSUE_NUMBER/attachments" \
-            > attachments.json
+          echo "$BODY" > body.txt
           
-          if [ $(cat attachments.json | jq 'length') -eq 0 ]; then
-            echo "No attachments found"
+          URLS=$(grep -oE 'https://github\.com/user-attachments/assets/[a-zA-Z0-9-]+' body.txt || true)
+          
+          if [ -z "$URLS" ]; then
+            echo "No attachments found in issue body"
             echo "count=0" >> $GITHUB_OUTPUT
           else
-            cat attachments.json | jq -r '.[].browser_download_url' > urls.txt
+            echo "$URLS" > urls.txt
             echo "count=$(cat urls.txt | wc -l)" >> $GITHUB_OUTPUT
           fi
 
@@ -159,4 +158,4 @@ jobs:
           curl -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
-            -d "{\"body\":\"⚠️ 提交失败\n\n原因：未找到有效的图片附件。请在 Issue 中直接上传图片文件（不要使用外部链接）。\n\n支持的格式：jpg、png、gif、webp\"}"
+            -d "{\"body\":\"⚠️ 提交失败\n\n原因：未找到有效的图片附件。\n\n请直接在 Issue 正文中上传图片（拖拽或粘贴图片到文本框），而不是使用外部链接。\n\n支持的格式：jpg、png、gif、webp\"}"
