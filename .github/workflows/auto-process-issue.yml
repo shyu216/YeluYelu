@@ -1,0 +1,165 @@
+name: Auto Process Issue
+
+on:
+  issues:
+    types: [opened, labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  process-issue:
+    if: contains(github.event.issue.labels.*.name, 'needs-review')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract image name from title
+        id: extract
+        run: |
+          TITLE="${{ github.event.issue.title }}"
+          
+          if [[ "$TITLE" =~ ^提交[\s　]+(.+)$ ]]; then
+            NAME="${BASH_REMATCH[1]}"
+          else
+            NAME="$TITLE"
+          fi
+          
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "Extracted name: $NAME"
+
+      - name: Get issue attachments
+        id: attachments
+        run: |
+          ISSUE_NUMBER=${{ github.event.issue.number }}
+          REPO="${{ github.repository }}"
+          
+          curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/$REPO/issues/$ISSUE_NUMBER/attachments" \
+            > attachments.json
+          
+          if [ $(cat attachments.json | jq 'length') -eq 0 ]; then
+            echo "No attachments found"
+            echo "count=0" >> $GITHUB_OUTPUT
+          else
+            cat attachments.json | jq -r '.[].browser_download_url' > urls.txt
+            echo "count=$(cat urls.txt | wc -l)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate and download image
+        id: download
+        if: steps.attachments.outputs.count != '0'
+        run: |
+          NAME="${{ steps.extract.outputs.name }}"
+          mkdir -p public/images
+          
+          while read -r url; do
+            if [[ -n "$url" ]]; then
+              curl -L -o "public/images/$NAME.jpg" "$url"
+              
+              if file "public/images/$NAME.jpg" | grep -qE "image|JPEG|PNG|GIF"; then
+                echo "success=true" >> $GITHUB_OUTPUT
+                echo "path=public/images/$NAME.jpg" >> $GITHUB_OUTPUT
+                echo "Downloaded: $NAME.jpg"
+                break
+              fi
+            fi
+          done < urls.txt
+
+      - name: Check download result
+        id: check
+        if: steps.download.outputs.success != 'true'
+        run: |
+          echo "::warning::No valid image found in issue attachments"
+
+      - name: Update data.json
+        if: steps.download.outputs.success == 'true'
+        run: |
+          NAME="${{ steps.extract.outputs.name }}"
+          IMAGE_NAME="$NAME.jpg"
+          
+          NEW_ID=$(($(jq 'length' data.json) + 1))
+          
+          jq --arg id "$NEW_ID" --arg name "$NAME" --arg url "$IMAGE_NAME" \
+            '. += [{"id": ($id | tonumber), "name": $name, "imageUrl": $url}]' \
+            data.json > data.json.tmp
+          
+          mv data.json.tmp data.json
+          
+          echo "Updated data.json with: $NAME"
+
+      - name: Create branch for PR
+        if: steps.download.outputs.success == 'true'
+        run: |
+          BRANCH_NAME="feat/add-${{ steps.extract.outputs.name }}-$(date +%s)"
+          git checkout -b "$BRANCH_NAME"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/images/ data.json
+          git commit -m "feat: 添加 ${{ steps.extract.outputs.name }} 图片"
+          git push -u origin "$BRANCH_NAME"
+          
+          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Create PR
+        if: steps.download.outputs.success == 'true'
+        run: |
+          BRANCH_NAME="${{ steps.create-branch.outputs.branch }}"
+          
+          curl -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls" \
+            -d "{
+              \"title\": \"feat: 添加 ${{ steps.extract.outputs.name }} 图片\",
+              \"body\": \"由 Issue #${{ github.event.issue.number }} 自动创建\",
+              \"head\": \"$BRANCH_NAME\",
+              \"base\": \"main\"
+            }" > pr_response.json
+          
+          PR_NUMBER=$(cat pr_response.json | jq -r '.number')
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "Created PR #$PR_NUMBER"
+
+      - name: Approve and merge PR
+        if: steps.download.outputs.success == 'true'
+        run: |
+          PR_NUMBER="${{ steps.create-pr.outputs.pr_number }}"
+          sleep 3
+          
+          curl -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER/reviews" \
+            -d '{"event":"APPROVE"}'
+          
+          sleep 2
+          
+          curl -X PUT -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER/merge" \
+            -d '{"merge_method":"squash"}'
+
+      - name: Close issue with success message
+        if: steps.download.outputs.success == 'true'
+        run: |
+          BODY="✅ 提交成功！图片「${{ steps.extract.outputs.name }}」已添加到图库，感谢您的贡献！"
+          
+          curl -X PATCH -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}" \
+            -d "{\"state\":\"closed\", \"body\": \"$BODY\"}"
+
+      - name: Comment failure
+        if: steps.download.outputs.success != 'true'
+        run: |
+          BODY="⚠️ 提交失败
+
+原因：未找到有效的图片附件。请在 Issue 中直接上传图片文件（不要使用外部链接）。
+
+支持的格式：jpg、png、gif、webp"
+          
+          curl -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
+            -d "{\"body\":\"$BODY\"}"

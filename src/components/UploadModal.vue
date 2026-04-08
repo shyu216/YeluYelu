@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { getAuthUrl, getStoredToken, createIssueWithImage } from '../utils/github'
 
 const emit = defineEmits(['close', 'uploaded'])
 
@@ -9,9 +10,19 @@ const birdName = ref('')
 const photographer = ref('')
 const mimicry = ref('')
 const error = ref('')
+const isSubmitting = ref(false)
+const isLoggedIn = ref(false)
+const user = ref(null)
 
 const REPO_OWNER = 'shyu216'
 const REPO_NAME = 'YeluYelu'
+
+onMounted(() => {
+  const token = getStoredToken()
+  if (token) {
+    isLoggedIn.value = true
+  }
+})
 
 function handleFileSelect(event) {
   const file = event.target.files[0]
@@ -49,17 +60,31 @@ function removeImage() {
   mimicry.value = ''
 }
 
-function handleSubmit() {
-  if (!selectedFile.value || !birdName.value.trim()) {
+function handleLogin() {
+  window.location.href = getAuthUrl()
+}
+
+async function handleSubmit() {
+  if (!selectedFile.value || !mimicry.value.trim()) {
     error.value = '请选择图片并输入名称'
     return
   }
 
-  const finalName = mimicry.value.trim() || birdName.value.trim()
-  const finalPhotographer = photographer.value.trim() || 'anonymous'
+  const token = getStoredToken()
+  if (!token) {
+    handleLogin()
+    return
+  }
 
-  const issueTitle = `📸 上传: ${finalName} by ${finalPhotographer}`
-  const issueBody = `## 夜鹭拟态图鉴上传
+  isSubmitting.value = true
+  error.value = ''
+
+  try {
+    const finalName = mimicry.value.trim()
+    const finalPhotographer = photographer.value.trim() || 'anonymous'
+
+    const issueTitle = `📸 上传: ${finalName} by ${finalPhotographer}`
+    const issueBody = `## 夜鹭拟态图鉴上传
 
 ### 拟态名称
 ${finalName}
@@ -67,18 +92,22 @@ ${finalName}
 ### 摄影师/来源
 ${finalPhotographer}
 
-### 上传说明
-请在此评论中上传您的图片，或者直接拖拽图片到下方。
+### 上传时间
+${new Date().toLocaleString('zh-CN')}`
 
----
-💡 提示：上传后管理员会进行审核，审核通过后图片将出现在图鉴中。`
+    await createIssueWithImage(token, issueTitle, issueBody, selectedFile.value)
 
-  const issueUrl = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/new?title=${encodeURIComponent(issueTitle)}&body=${encodeURIComponent(issueBody)}`
-
-  window.open(issueUrl, '_blank')
-
-  emit('uploaded', { fileName: finalName, birdName: finalName, photographer: finalPhotographer })
-  emit('close')
+    emit('uploaded', { fileName: finalName, birdName: finalName, photographer: finalPhotographer })
+    emit('close')
+  } catch (err) {
+    error.value = '提交失败: ' + err.message
+    if (err.message.includes('Unauthorized') || err.message.includes('401')) {
+      localStorage.removeItem('github_token')
+      isLoggedIn.value = false
+    }
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
 
@@ -93,10 +122,16 @@ ${finalPhotographer}
       </div>
       
       <div class="p-6">
-        <div class="mb-4 p-3 bg-blue-50 rounded">
+        <div v-if="!isLoggedIn" class="mb-4 p-3 bg-blue-50 rounded">
           <p class="text-sm text-blue-700">
-            <i class="fa fa-info-circle mr-1"></i>
-            无需注册！点击提交后将在 GitHub 打开上传页面，按提示操作即可。
+            <i class="fa fa-github mr-1"></i>
+            需要<strong>授权 GitHub</strong>才能自动上传图片，点击下方按钮进行授权。
+          </p>
+        </div>
+        <div v-else class="mb-4 p-3 bg-green-50 rounded">
+          <p class="text-sm text-green-700">
+            <i class="fa fa-check-circle mr-1"></i>
+            已登录 GitHub，可以直接上传！
           </p>
         </div>
 
@@ -166,11 +201,21 @@ ${finalPhotographer}
         <div class="flex justify-end space-x-3">
           <button @click="$emit('close')" class="btn-outline">取消</button>
           <button 
+            v-if="!isLoggedIn"
+            @click="handleLogin" 
+            class="btn-primary"
+          >
+            <i class="fa fa-github mr-2"></i>授权 GitHub
+          </button>
+          <button 
+            v-else
             @click="handleSubmit" 
             class="btn-primary"
-            :disabled="!selectedFile || !mimicry"
+            :disabled="!selectedFile || !mimicry || isSubmitting"
           >
-            <i class="fa fa-github mr-2"></i>提交到 GitHub
+            <i v-if="isSubmitting" class="fa fa-spinner fa-spin mr-2"></i>
+            <i v-else class="fa fa-upload mr-2"></i>
+            {{ isSubmitting ? '上传中...' : '提交到 GitHub' }}
           </button>
         </div>
       </div>
