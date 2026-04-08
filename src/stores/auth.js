@@ -9,7 +9,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoggedIn = computed(() => !!token.value && !!user.value)
 
   const GITHUB_CLIENT_ID = 'Ov23liuwR1uI018KA8o2'
-  const REDIRECT_URI = 'https://shyu216.github.io/YeluYelu/'
+  const REDIRECT_URI = 'https://shyu216.github.io/YeluYelu'
 
   function initAuth() {
     if (token.value) {
@@ -58,7 +58,8 @@ export const useAuthStore = defineStore('auth', () => {
   function login() {
     const scope = 'repo'
     const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scope}`
-    alert('将在新窗口打开 GitHub 登录，请完成登录后返回。开发环境可能会看到安全警告，点击"仍然继续"即可。')
+    console.log('OAuth URL:', authUrl)
+    alert('登录URL: ' + authUrl + '\n\n如果看到这个alert，请告诉我内容')
     window.location.href = authUrl
   }
 
