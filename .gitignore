@@ -7,3 +7,4 @@ ip_operations.json
 operation_log.json
 
 .env
+log/

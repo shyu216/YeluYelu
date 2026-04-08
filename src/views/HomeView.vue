@@ -233,7 +233,7 @@ onUnmounted(() => {
             <img
               :src="getImageUrl(bird.imageUrl)"
               :alt="bird.name"
-              class="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
+              class="w-full h-full object-contain transition-all duration-300 group-hover:scale-105"
               loading="lazy"
               @error="$event.target.src = '/YeluYelu/images/夜鹭.jpg'"
             >
@@ -272,7 +272,7 @@ onUnmounted(() => {
             <img 
               :src="getImageUrl(selectedBird.imageUrl)" 
               :alt="selectedBird.name"
-              class="w-full h-64 object-cover border-2 border-black"
+              class="w-full h-64 object-contain border-2 border-black"
             >
           </div>
           

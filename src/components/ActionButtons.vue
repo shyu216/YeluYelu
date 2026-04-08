@@ -67,7 +67,14 @@ async function generateLongImage() {
       
       try {
         const img = await loadImage(getImageUrl(bird.imageUrl))
-        ctx.drawImage(img, x, y, imgWidth, imgHeight)
+        
+        const scale = Math.min(imgWidth / img.width, imgHeight / img.height)
+        const drawWidth = img.width * scale
+        const drawHeight = img.height * scale
+        const drawX = x + (imgWidth - drawWidth) / 2
+        const drawY = y + (imgHeight - drawHeight) / 2
+        
+        ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight)
         
         ctx.fillStyle = '#333333'
         ctx.font = '48px sans-serif'
@@ -80,7 +87,7 @@ async function generateLongImage() {
         ctx.fillStyle = '#999999'
         ctx.font = '48px sans-serif'
         ctx.textAlign = 'center'
-        ctx.fillText('图片加载失败', x + imgWidth / 2, y + imgHeight / 2)
+        ctx.fillText('图片加载失败', x + imgWidth / 2, y + imgHeight / 2 + 16)
       }
     }
 

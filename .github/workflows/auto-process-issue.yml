@@ -7,6 +7,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   process-issue:
@@ -19,15 +20,28 @@ jobs:
       - name: Extract image name from title
         id: extract
         run: |
-          TITLE="${{ github.event.issue.title }}"
+          BODY="${{ github.event.issue.body }}"
           
-          if [[ "$TITLE" =~ ^夜师傅的第\ ([0-9]+)\ 张丑照$ ]]; then
-            NUMBER="${BASH_REMATCH[1]}"
-            NAME="夜师傅-$NUMBER"
-          elif [[ "$TITLE" =~ ^提交[\s　]+(.+)$ ]]; then
+          NAME=""
+          
+          if [[ "$BODY" =~ 拟态名称[：:][\s\n]*([^\n]+) ]]; then
             NAME="${BASH_REMATCH[1]}"
-          else
-            NAME="$TITLE"
+            NAME="${NAME#"${NAME%%[![:space:]]*}"}"
+            NAME="${NAME%"${NAME##*[![:space:]]}"}"
+            NAME="${NAME// /-}"
+          fi
+          
+          if [ -z "$NAME" ]; then
+            TITLE="${{ github.event.issue.title }}"
+            
+            if [[ "$TITLE" =~ ^夜师傅的第\ ([0-9]+)\ 张丑照$ ]]; then
+              NUMBER="${BASH_REMATCH[1]}"
+              NAME="未知夜师傅-$NUMBER"
+            elif [[ "$TITLE" =~ ^提交[\s　]+(.+)$ ]]; then
+              NAME="${BASH_REMATCH[1]}"
+            else
+              NAME="$TITLE"
+            fi
           fi
           
           echo "name=$NAME" >> $GITHUB_OUTPUT
@@ -94,6 +108,7 @@ jobs:
 
       - name: Create branch for PR
         if: steps.download.outputs.success == 'true'
+        id: create-branch
         run: |
           BRANCH_NAME="feat/add-${{ steps.extract.outputs.name }}-$(date +%s)"
           git checkout -b "$BRANCH_NAME"
@@ -104,11 +119,16 @@ jobs:
           git push -u origin "$BRANCH_NAME"
           
           echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          
+          echo "Created branch: $BRANCH_NAME"
 
       - name: Create PR
         if: steps.download.outputs.success == 'true'
+        id: create-pr
         run: |
           BRANCH_NAME="${{ steps.create-branch.outputs.branch }}"
+          
+          echo "Creating PR with branch: $BRANCH_NAME"
           
           curl -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
@@ -119,6 +139,8 @@ jobs:
               \"head\": \"$BRANCH_NAME\",
               \"base\": \"main\"
             }" > pr_response.json
+          
+          cat pr_response.json
           
           PR_NUMBER=$(cat pr_response.json | jq -r '.number')
           echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
