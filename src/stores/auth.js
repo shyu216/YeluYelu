@@ -9,7 +9,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoggedIn = computed(() => !!token.value && !!user.value)
 
   const GITHUB_CLIENT_ID = 'Ov23liuwR1uI018KA8o2'
-  const REDIRECT_URI = window.location.origin + '/callback'
+  const REDIRECT_URI = 'https://shyu216.github.io/YeluYelu/'
 
   function initAuth() {
     if (token.value) {
