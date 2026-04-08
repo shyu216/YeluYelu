@@ -1,7 +1,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import birdsData from '../../public/data.json'
+import { handleCallback, getStoredToken } from '../utils/github'
 
+const router = useRouter()
 const birds = ref(birdsData)
 const birdCount = ref(birdsData.length)
 const searchTerm = ref('')
@@ -38,6 +41,22 @@ function handleSearch(event) {
 function getImageUrl(imageUrl) {
   return `/YeluYelu/images/${imageUrl}`
 }
+
+onMounted(async () => {
+  const urlParams = new URLSearchParams(window.location.search)
+  const code = urlParams.get('code')
+  const state = urlParams.get('state')
+  
+  if (code) {
+    try {
+      await handleCallback(code, state)
+      window.history.replaceState({}, '', '/YeluYelu/')
+      alert('登录成功！')
+    } catch (err) {
+      alert('登录失败: ' + err.message)
+    }
+  }
+})
 </script>
 
 <template>

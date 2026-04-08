@@ -102,7 +102,7 @@ ${new Date().toLocaleString('zh-CN')}`
   } catch (err) {
     error.value = '提交失败: ' + err.message
     if (err.message.includes('Unauthorized') || err.message.includes('401')) {
-      localStorage.removeItem('github_token')
+      document.cookie = 'github_token=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/'
       isLoggedIn.value = false
     }
   } finally {
