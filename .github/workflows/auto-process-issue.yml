@@ -2,12 +2,13 @@ name: Auto Process Issue
 
 on:
   issues:
-    types: [opened, labeled]
+    types: [labeled]
 
 permissions:
   contents: write
   pull-requests: write
   issues: write
+  workflows: write
 
 jobs:
   process-issue:
@@ -24,14 +25,13 @@ jobs:
           
           NAME=""
           
-          if [[ "$BODY" =~ 拟态名称[：:][\s\n]*([^\n]+) ]]; then
+          if [[ "$BODY" =~ 拟态名称[\s\n]*\*\*请填写拟态名称\*\*[^\n]*\n?([^\n]+) ]]; then
             NAME="${BASH_REMATCH[1]}"
-            NAME="${NAME#"${NAME%%[![:space:]]*}"}"
-            NAME="${NAME%"${NAME##*[![:space:]]}"}"
-            NAME="${NAME// /-}"
+          elif [[ "$BODY" =~ 拟态名称[\s\n]*([^\n]+) ]]; then
+            NAME="${BASH_REMATCH[1]}"
           fi
           
-          if [ -z "$NAME" ]; then
+          if [[ "$NAME" == *"请填写"* ]] || [[ -z "$NAME" ]]; then
             TITLE="${{ github.event.issue.title }}"
             
             if [[ "$TITLE" =~ ^夜师傅的第\ ([0-9]+)\ 张丑照$ ]]; then
@@ -43,6 +43,10 @@ jobs:
               NAME="$TITLE"
             fi
           fi
+          
+          NAME="${NAME#"${NAME%%[![:space:]]*}"}"
+          NAME="${NAME%"${NAME##*[![:space:]]}"}"
+          NAME="${NAME// /-}"
           
           echo "name=$NAME" >> $GITHUB_OUTPUT
           echo "Extracted name: $NAME"
@@ -163,6 +167,15 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER/merge" \
             -d '{"merge_method":"squash"}'
+
+      - name: Trigger deploy workflow
+        if: steps.download.outputs.success == 'true'
+        run: |
+          sleep 5
+          curl -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/deploy-pages.yml/dispatches" \
+            -d '{"ref": "main"}'
 
       - name: Close issue with success message
         if: steps.download.outputs.success == 'true'
