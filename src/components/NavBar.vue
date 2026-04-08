@@ -2,9 +2,11 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import UploadModal from './UploadModal.vue'
+import UploadIssueModal from './UploadIssueModal.vue'
 
 const router = useRouter()
 const showUploadModal = ref(false)
+const showUploadIssueModal = ref(false)
 
 const goHome = () => {
   router.push('/')
@@ -26,6 +28,13 @@ const goHome = () => {
         >
           <i class="fa fa-plus mr-2"></i>上传更多夜师傅丑照
         </button>
+        <button 
+          id="add-bird-issue-btn" 
+          class="btn-secondary flex items-center"
+          @click="showUploadIssueModal = true"
+        >
+          <i class="fa fa-rocket mr-2"></i>快速提交
+        </button>
       </div>
     </div>
   </header>
@@ -34,5 +43,11 @@ const goHome = () => {
     v-if="showUploadModal" 
     @close="showUploadModal = false"
     @uploaded="showUploadModal = false"
+  />
+  
+  <UploadIssueModal 
+    v-if="showUploadIssueModal" 
+    @close="showUploadIssueModal = false"
+    @uploaded="showUploadIssueModal = false"
   />
 </template>

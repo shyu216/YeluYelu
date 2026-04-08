@@ -3,56 +3,17 @@ import { ref } from 'vue'
 
 const emit = defineEmits(['close', 'uploaded'])
 
-const selectedFile = ref(null)
-const previewUrl = ref(null)
 const birdName = ref('')
 const photographer = ref('')
-const mimicry = ref('')
 const error = ref('')
 const isSubmitting = ref(false)
 
 const REPO_OWNER = 'shyu216'
 const REPO_NAME = 'YeluYelu'
 
-function handleFileSelect(event) {
-  const file = event.target.files[0]
-  if (file) {
-    selectedFile.value = file
-    previewUrl.value = URL.createObjectURL(file)
-    birdName.value = file.name.replace(/\.[^/.]+$/, '')
-    mimicry.value = file.name.replace(/\.[^/.]+$/, '')
-  }
-}
-
-function handleDrop(event) {
-  event.preventDefault()
-  const file = event.dataTransfer.files[0]
-  if (file && file.type.startsWith('image/')) {
-    selectedFile.value = file
-    previewUrl.value = URL.createObjectURL(file)
-    birdName.value = file.name.replace(/\.[^/.]+$/, '')
-    mimicry.value = file.name.replace(/\.[^/.]+$/, '')
-  }
-}
-
-function handleDragOver(event) {
-  event.preventDefault()
-}
-
-function removeImage() {
-  if (previewUrl.value) {
-    URL.revokeObjectURL(previewUrl.value)
-  }
-  selectedFile.value = null
-  previewUrl.value = null
-  birdName.value = ''
-  photographer.value = ''
-  mimicry.value = ''
-}
-
 function handleSubmit() {
-  if (!selectedFile.value || !mimicry.value.trim()) {
-    error.value = '请选择图片并输入名称'
+  if (!birdName.value.trim()) {
+    error.value = '请输入图片名称'
     return
   }
 
@@ -60,7 +21,7 @@ function handleSubmit() {
   error.value = ''
 
   try {
-    const finalName = mimicry.value.trim()
+    const finalName = birdName.value.trim()
     const finalPhotographer = photographer.value.trim() || 'anonymous'
 
     const issueTitle = `📸 上传: ${finalName} by ${finalPhotographer}`
@@ -99,7 +60,7 @@ ${new Date().toLocaleString('zh-CN')}
   <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="$emit('close')">
     <div class="bg-white shadow-2xl w-full max-w-lg mx-4">
       <div class="flex justify-between items-center p-6 border-b">
-        <h2 class="text-xl font-bold text-primary">上传夜鹭拟态图鉴</h2>
+        <h2 class="text-xl font-bold text-primary">快速提交图片</h2>
         <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600">
           <i class="fa fa-times text-xl"></i>
         </button>
@@ -114,42 +75,9 @@ ${new Date().toLocaleString('zh-CN')}
         </div>
 
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-1">图片</label>
-          <div 
-            v-if="!previewUrl"
-            class="border-2 border-dashed border-gray-300 p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
-            @click="$refs.fileInput.click()"
-            @drop="handleDrop"
-            @dragover="handleDragOver"
-          >
-            <input 
-              ref="fileInput"
-              type="file" 
-              accept="image/*" 
-              class="hidden"
-              @change="handleFileSelect"
-            >
-            <i class="fa fa-cloud-upload text-gray-400 text-3xl mb-2"></i>
-            <p class="text-gray-500 mb-1">点击或拖拽图片到这里</p>
-            <p class="text-xs text-gray-400">支持 JPG, PNG 格式</p>
-          </div>
-
-          <div v-else class="mt-3">
-            <img :src="previewUrl" alt="预览" class="w-full h-48 object-cover border-2 border-black">
-            <button 
-              type="button" 
-              @click="removeImage"
-              class="mt-2 text-red-500 text-sm hover:text-red-700"
-            >
-              <i class="fa fa-trash-o mr-1"></i>移除图片
-            </button>
-          </div>
-        </div>
-
-        <div class="mb-4">
           <label class="block text-sm font-medium text-gray-700 mb-1">拟态（图片名称）</label>
           <input 
-            v-model="mimicry"
+            v-model="birdName"
             type="text" 
             placeholder="例如：哥斯拉"
             class="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -166,9 +94,9 @@ ${new Date().toLocaleString('zh-CN')}
           >
         </div>
 
-        <div v-if="mimicry" class="mb-4 p-3 bg-gray-100 rounded">
+        <div v-if="birdName" class="mb-4 p-3 bg-gray-100 rounded">
           <p class="text-sm text-gray-600">
-            文件名将保存为：<span class="font-mono font-bold">{{ mimicry }}_by_{{ photographer || 'anonymous' }}.jpg</span>
+            文件名将保存为：<span class="font-mono font-bold">{{ birdName }}_by_{{ photographer || 'anonymous' }}.jpg</span>
           </p>
         </div>
 
@@ -181,7 +109,7 @@ ${new Date().toLocaleString('zh-CN')}
           <button 
             @click="handleSubmit" 
             class="btn-primary"
-            :disabled="!selectedFile || !mimicry || isSubmitting"
+            :disabled="!birdName || isSubmitting"
           >
             <i v-if="isSubmitting" class="fa fa-spinner fa-spin mr-2"></i>
             <i v-else class="fa fa-upload mr-2"></i>
