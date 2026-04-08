@@ -8,7 +8,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isLoggedIn = computed(() => !!token.value && !!user.value)
 
-  const GITHUB_CLIENT_ID = 'YOUR_GITHUB_CLIENT_ID'
+  const GITHUB_CLIENT_ID = 'Ov23liuwR1uI018KA8o2'
   const REDIRECT_URI = window.location.origin + '/callback'
 
   function initAuth() {

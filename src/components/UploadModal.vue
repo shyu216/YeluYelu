@@ -16,7 +16,7 @@ const previewUrl = ref(null)
 const birdName = ref('')
 const error = ref('')
 
-const REPO_OWNER = 'YOUR_GITHUB_USERNAME'
+const REPO_OWNER = 'shyu216'
 const REPO_NAME = 'YeluYelu'
 setRepoConfig(REPO_OWNER, REPO_NAME)
 

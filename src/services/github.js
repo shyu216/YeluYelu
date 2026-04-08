@@ -1,7 +1,7 @@
 import { Octokit } from 'octokit'
 
 let repoConfig = {
-  owner: 'YOUR_GITHUB_USERNAME',
+  owner: 'shyu216',
   repo: 'YeluYelu',
   baseBranch: 'main'
 }

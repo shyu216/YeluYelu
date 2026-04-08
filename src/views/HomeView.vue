@@ -56,7 +56,7 @@ function createBirdCard(bird) {
   return {
     id: bird.id,
     name: bird.name,
-    imageUrl: `/images/${bird.imageUrl || bird.name}.jpg`
+    imageUrl: `/images/${bird.imageUrl || bird.name}`
   }
 }
 </script>
