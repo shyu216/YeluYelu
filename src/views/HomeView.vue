@@ -26,14 +26,27 @@ async function fetchBirds() {
   if (isLoading.value) return
   
   isLoading.value = true
+  console.log('[Home] fetchBirds: starting')
   try {
+    console.log('[Home] fetchBirds: fetching /data.json')
     const response = await fetch('/data.json')
+    console.log('[Home] fetchBirds: response status:', response.status)
+    console.log('[Home] fetchBirds: response ok:', response.ok)
+    
+    if (!response.ok) {
+      console.error('[Home] fetchBirds: failed to fetch data.json, status:', response.status)
+      return
+    }
+    
     const data = await response.json()
+    console.log('[Home] fetchBirds: data length:', data ? data.length : 0)
     birds.value = data
+    console.log('[Home] fetchBirds: birds.value set, length:', birds.value.length)
   } catch (error) {
-    console.error('Failed to fetch birds:', error)
+    console.error('[Home] fetchBirds error:', error)
   } finally {
     isLoading.value = false
+    console.log('[Home] fetchBirds: done, birds.value length:', birds.value.length)
   }
 }
 
