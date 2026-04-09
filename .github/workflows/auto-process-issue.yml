@@ -2,7 +2,7 @@ name: Auto Process Issue
 
 on:
   issues:
-    types: [labeled]
+    # types: [labeled]
 
 permissions:
   contents: write
@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   process-issue:
-    if: contains(github.event.issue.labels.*.name, 'needs-review')
+    # if: contains(github.event.issue.labels.*.name, 'needs-review')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
