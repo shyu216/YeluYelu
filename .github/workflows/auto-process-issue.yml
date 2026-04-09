@@ -78,23 +78,24 @@ jobs:
           NAME="${{ steps.extract.outputs.name }}"
           mkdir -p public/images
           
-          ORIGINAL_NAME="$NAME"
           TIMESTAMP=$(date +%s)
+          FILENAME="$NAME"
           
           if [ -f "public/images/$NAME.jpg" ]; then
-            NAME="$NAME-$TIMESTAMP"
-            echo "File exists, using new name: $NAME.jpg"
+            FILENAME="$NAME-$TIMESTAMP"
+            echo "File exists, using new filename: $FILENAME.jpg"
           fi
           
           while read -r url; do
             if [[ -n "$url" ]]; then
-              curl -L -o "public/images/$NAME.jpg" "$url"
+              curl -L -o "public/images/$FILENAME.jpg" "$url"
               
-              if file "public/images/$NAME.jpg" | grep -qE "image|JPEG|PNG|GIF"; then
+              if file "public/images/$FILENAME.jpg" | grep -qE "image|JPEG|PNG|GIF"; then
                 echo "success=true" >> $GITHUB_OUTPUT
-                echo "path=public/images/$NAME.jpg" >> $GITHUB_OUTPUT
+                echo "path=public/images/$FILENAME.jpg" >> $GITHUB_OUTPUT
                 echo "name=$NAME" >> $GITHUB_OUTPUT
-                echo "Downloaded: $NAME.jpg"
+                echo "filename=$FILENAME" >> $GITHUB_OUTPUT
+                echo "Downloaded: $FILENAME.jpg"
                 break
               fi
             fi
@@ -110,7 +111,8 @@ jobs:
         if: steps.download.outputs.success == 'true'
         run: |
           NAME="${{ steps.download.outputs.name }}"
-          IMAGE_NAME="$NAME.jpg"
+          FILENAME="${{ steps.download.outputs.filename }}"
+          IMAGE_NAME="$FILENAME.jpg"
           
           NEW_ID=$(($(jq 'length' public/data.json) + 1))
           
@@ -120,13 +122,13 @@ jobs:
           
           mv public/data.json.tmp public/data.json
           
-          echo "Updated data.json with: $NAME"
+          echo "Updated data.json with: $NAME -> $FILENAME.jpg"
 
       - name: Create branch for PR
         if: steps.download.outputs.success == 'true'
         id: create-branch
         run: |
-          BRANCH_NAME="feat/add-${{ steps.download.outputs.name }}-$(date +%s)"
+          BRANCH_NAME="feat/add-${{ steps.download.outputs.filename }}-$(date +%s)"
           git checkout -b "$BRANCH_NAME"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
