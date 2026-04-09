@@ -15,6 +15,10 @@ const itemsPerPage = 50
 const hasMore = ref(true)
 const selectedBird = ref(null)
 const searchFocused = ref(false)
+const scrollY = ref(0)
+const scrollHeight = ref(0)
+const clientHeight = ref(0)
+const currentRowId = ref(null)
 
 const uniqueBirdNames = computed(() => {
   const nameSet = new Set()
@@ -114,13 +118,80 @@ function init() {
 }
 
 function handleScroll() {
-  const scrollTop = window.scrollY || document.documentElement.scrollTop
-  const scrollHeight = document.documentElement.scrollHeight
-  const clientHeight = document.documentElement.clientHeight
+  scrollY.value = window.scrollY || document.documentElement.scrollTop
+  scrollHeight.value = document.documentElement.scrollHeight
+  clientHeight.value = document.documentElement.clientHeight
   
-  if (scrollTop + clientHeight >= scrollHeight - 100) {
+  if (scrollY.value + clientHeight.value >= scrollHeight.value - 100) {
     loadMore()
   }
+  
+  updateCurrentRowId()
+}
+
+function updateCurrentRowId() {
+  const gallery = document.getElementById('bird-gallery')
+  if (!gallery) return
+  
+  const items = gallery.querySelectorAll('[data-bird-id]')
+  if (items.length === 0) {
+    currentRowId.value = null
+    return
+  }
+  
+  const viewportTop = scrollY.value
+  const viewportBottom = scrollY.value + clientHeight.value
+  
+  let closestItem = null
+  let closestDistance = Infinity
+  let foundVisible = false
+  
+  items.forEach(item => {
+    const rect = item.getBoundingClientRect()
+    const itemTop = rect.top + window.scrollY
+    const itemBottom = itemTop + rect.height
+    
+    if (itemTop >= viewportTop - rect.height && itemBottom <= viewportBottom + rect.height) {
+      const distance = Math.abs((itemTop + itemBottom) / 2 - (viewportTop + viewportBottom) / 2)
+      if (distance < closestDistance) {
+        closestDistance = distance
+        closestItem = item
+        foundVisible = true
+      }
+    }
+  })
+  
+  if (closestItem) {
+    currentRowId.value = parseInt(closestItem.dataset.birdId)
+    return
+  }
+  
+  if (filteredBirds.value.length > 0 && scrollHeight.value > clientHeight.value) {
+    const scrollProgress = scrollY.value / (scrollHeight.value - clientHeight.value)
+    const estimatedIndex = Math.floor(scrollProgress * filteredBirds.value.length)
+    const estimatedBird = filteredBirds.value[Math.min(estimatedIndex, filteredBirds.value.length - 1)]
+    if (estimatedBird) {
+      currentRowId.value = estimatedBird.id
+    }
+  }
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function scrollToBottom() {
+  window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' })
+  
+  setTimeout(() => {
+    scrollY.value = window.scrollY || document.documentElement.scrollTop
+    scrollHeight.value = document.documentElement.scrollHeight
+    clientHeight.value = document.documentElement.clientHeight
+    
+    if (scrollY.value + clientHeight.value >= scrollHeight.value - 100) {
+      loadMore()
+    }
+  }, 350)
 }
 
 function openDownloadModal(bird) {
@@ -226,6 +297,7 @@ onUnmounted(() => {
         <div
           v-for="bird in paginatedBirds"
           :key="bird.id"
+          :data-bird-id="bird.id"
           class="group cursor-pointer"
           @click="openDownloadModal(bird)"
         >
@@ -249,6 +321,34 @@ onUnmounted(() => {
           <p class="text-gray-500 mt-4">加载中...</p>
         </div>
       </div>
+    </div>
+
+    <div class="fixed right-6 top-1/2 -translate-y-1/2 z-40 no-export">
+      <div 
+        v-if="scrollY > 100 && currentRowId !== null"
+        class="bg-primary text-white px-3 py-2 rounded-lg shadow-lg text-sm font-bold min-w-[60px] text-center"
+      >
+        ID: {{ currentRowId }}
+      </div>
+    </div>
+
+    <div class="fixed bottom-6 right-6 flex flex-col gap-2 z-40 no-export">
+      <button 
+        v-if="scrollY > 200"
+        @click="scrollToTop"
+        class="w-12 h-12 bg-primary text-white rounded-full shadow-lg hover:bg-primary/80 transition-colors flex items-center justify-center"
+        title="回到顶部"
+      >
+        <i class="fa fa-arrow-up"></i>
+      </button>
+      <button 
+        v-if="scrollY + clientHeight < scrollHeight - 200"
+        @click="scrollToBottom"
+        class="w-12 h-12 bg-secondary text-white rounded-full shadow-lg hover:bg-secondary/80 transition-colors flex items-center justify-center"
+        title="回到最下"
+      >
+        <i class="fa fa-arrow-down"></i>
+      </button>
     </div>
 
     <div 
