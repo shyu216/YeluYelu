@@ -157,7 +157,7 @@ async function openGitHubIssueWithRefresh() {
         <i v-else class="fa fa-image text-primary"></i>
       </div>
       <span class="font-bold text-primary">
-        {{ isGeneratingLongImage ? '生成中...' : '生成长图' }}
+        {{ isGeneratingLongImage ? '下载完成' : '下载长图' }}
       </span>
     </button>
     
@@ -171,7 +171,7 @@ async function openGitHubIssueWithRefresh() {
         <i v-else class="fa fa-plus text-secondary"></i>
       </div>
       <span class="font-bold text-secondary">
-        {{ isLoading ? '处理中...' : '分享丑照' }}
+        {{ isLoading ? '去github发个issue吧' : '上传图片' }}
       </span>
     </button>
   </div>
